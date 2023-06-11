@@ -1,0 +1,67 @@
+diff --color -ruN linux-5.19.8/drivers/gpu/drm/i915/display/intel_psr.c linux-5.19.8-final/drivers/gpu/drm/i915/display/intel_psr.c
+--- b/drivers/gpu/drm/i915/display/intel_psr.c	2022-09-08 02:24:08.000000000 -0700
++++ a/drivers/gpu/drm/i915/display/intel_psr.c	2022-09-13 21:01:50.425323000 -0700
+@@ -979,20 +979,25 @@
+ 		return;
+ 	}
+ 
+-	psr_setup_time = drm_dp_psr_setup_time(intel_dp->psr_dpcd);
+-	if (psr_setup_time < 0) {
+-		drm_dbg_kms(&dev_priv->drm,
+-			    "PSR condition failed: Invalid PSR setup time (0x%02x)\n",
+-			    intel_dp->psr_dpcd[1]);
+-		return;
+-	}
++	if (dev_priv->params.psr_ignore_setup_time) {
++		drm_WARN_ON(&dev_priv->drm,
++			    "PSR force enabled: kernel parameter psr_ignore_setup_time is set\n");
++	} else {
++		psr_setup_time = drm_dp_psr_setup_time(intel_dp->psr_dpcd);
++		if (psr_setup_time < 0) {
++			drm_dbg_kms(&dev_priv->drm,
++				    "PSR condition failed: Invalid PSR setup time (0x%02x)\n",
++				    intel_dp->psr_dpcd[1]);
++			return;
++		}
+ 
+-	if (intel_usecs_to_scanlines(adjusted_mode, psr_setup_time) >
+-	    adjusted_mode->crtc_vtotal - adjusted_mode->crtc_vdisplay - 1) {
+-		drm_dbg_kms(&dev_priv->drm,
+-			    "PSR condition failed: PSR setup time (%d us) too long\n",
+-			    psr_setup_time);
+-		return;
++		if (intel_usecs_to_scanlines(adjusted_mode, psr_setup_time) >
++		    adjusted_mode->crtc_vtotal - adjusted_mode->crtc_vdisplay - 1) {
++			drm_dbg_kms(&dev_priv->drm,
++				    "PSR condition failed: PSR setup time (%d us) too long\n",
++				    psr_setup_time);
++			return;
++		}
+ 	}
+ 
+ 	crtc_state->has_psr = true;
+diff --color -ruN linux-5.19.8/drivers/gpu/drm/i915/i915_params.c linux-5.19.8-final/drivers/gpu/drm/i915/i915_params.c
+--- b/drivers/gpu/drm/i915/i915_params.c	2022-09-08 02:24:08.000000000 -0700
++++ a/drivers/gpu/drm/i915/i915_params.c	2022-09-13 20:51:14.473324000 -0700
+@@ -104,6 +104,10 @@
+ 	"is helpful to detect if PSR issues are related to bad values set in "
+ 	" VBT. (0=use VBT parameters, 1=use safest parameters)");
+ 
++i915_param_named(psr_ignore_setup_time, bool, 0400,
++		 "Ignore dp's PSR setup time check."
++		 " (0=default behavior, 1=ignore PSR setup time check)");
++
+ i915_param_named_unsafe(enable_psr2_sel_fetch, bool, 0400,
+ 	"Enable PSR2 selective fetch "
+ 	"(0=disabled, 1=enabled) "
+diff --color -ruN linux-5.19.8/drivers/gpu/drm/i915/i915_params.h linux-5.19.8-final/drivers/gpu/drm/i915/i915_params.h
+--- b/drivers/gpu/drm/i915/i915_params.h	2022-09-08 02:24:08.000000000 -0700
++++ a/drivers/gpu/drm/i915/i915_params.h	2022-09-13 20:48:09.253316000 -0700
+@@ -55,6 +55,7 @@
+ 	param(int, enable_fbc, -1, 0600) \
+ 	param(int, enable_psr, -1, 0600) \
+ 	param(bool, psr_safest_params, false, 0400) \
++	param(bool, psr_ignore_setup_time, false, 0400) \
+ 	param(bool, enable_psr2_sel_fetch, true, 0400) \
+ 	param(int, disable_power_well, -1, 0400) \
+ 	param(int, enable_ips, 1, 0600) \

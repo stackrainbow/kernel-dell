@@ -144,6 +144,7 @@ Summary: The Linux kernel
 # define buildid .local
 %define specrpmversion 6.3.12
 %define specversion 6.3.12
+%define buildid .april
 %define patchversion 6.3
 %define pkgrelease 200
 %define kversion 6
@@ -168,6 +169,9 @@ Summary: The Linux kernel
 # libexec dir is not used by the linker, so the shared object there
 # should not be exported to RPM provides
 %global __provides_exclude_from ^%{_libexecdir}/kselftests
+
+
+%define pe_signing_cert <MOK certificate nickname>
 
 # The following build options are enabled by default, but may become disabled
 # by later architecture-specific checks. These can also be disabled by using
@@ -914,6 +918,9 @@ Patch1: patch-%{patchversion}-redhat.patch
 %endif
 
 # empty final patch to facilitate testing of kernel patches
+Patch2: 0001-Add-a-lockdown_hibernate-parameter.patch
+Patch3: 99-remove-msr-protection-patch.patch
+Patch4: 99-intel-psr-patch.patch
 Patch999999: linux-kernel-test.patch
 
 # END OF PATCH DEFINITIONS
@@ -1564,6 +1571,9 @@ cp -a %{SOURCE1} .
 ApplyOptionalPatch patch-%{patchversion}-redhat.patch
 %endif
 
+ApplyOptionalPatch 0001-Add-a-lockdown_hibernate-parameter.patch
+ApplyOptionalPatch 99-remove-msr-protection-patch.patch
+ApplyOptionalPatch 99-intel-psr-patch.patch
 ApplyOptionalPatch linux-kernel-test.patch
 
 # END OF PATCH APPLICATIONS
